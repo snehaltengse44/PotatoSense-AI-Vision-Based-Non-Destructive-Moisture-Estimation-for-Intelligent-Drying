@@ -1,0 +1,17 @@
+{
+  "feature_type": "resnet50",
+  "target_size": 224,
+  "use_clahe": false,
+  "reference_image_name": "214.jpg",
+  "mean_bgr": [
+    0.3557616174221039,
+    0.48030951619148254,
+    0.530034601688385
+  ],
+  "std_bgr": [
+    0.3219181299209595,
+    0.30888631939888,
+    0.28475356101989746
+  ],
+  "weights_path": "../resnet50_weights.pth"
+}
