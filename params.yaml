@@ -1,0 +1,30 @@
+data:
+  images_dir: data/potato_MC_image_dataset
+  labels_csv: data/Potato_Moisture_content_labels.csv
+  target_size: 224
+
+feature_extraction:
+  backbones: [resnet50, convnext_tiny, efficientnet_b0]
+
+training:
+  models: [linear_svr, ridge, rf, knn, xgboost]
+  test_size: 0.2
+  random_state: 42
+
+tuning:
+  # set2: ridge + convnext_tiny — vary alpha and validation split size
+  ridge_grid:
+    - {alpha: 0.1, val_size: 0.15}
+    - {alpha: 1.0, val_size: 0.15}
+    - {alpha: 10.0, val_size: 0.15}
+    - {alpha: 100.0, val_size: 0.15}
+    - {alpha: 1.0, val_size: 0.1}
+    - {alpha: 1.0, val_size: 0.2}
+
+  # set3: linear_svr across all backbones — vary C and epsilon
+  svr_grid:
+    - {c: 0.1, epsilon: 0.0}
+    - {c: 1.0, epsilon: 0.0}
+    - {c: 10.0, epsilon: 0.0}
+    - {c: 1.0, epsilon: 0.1}
+    - {c: 1.0, epsilon: 0.5}

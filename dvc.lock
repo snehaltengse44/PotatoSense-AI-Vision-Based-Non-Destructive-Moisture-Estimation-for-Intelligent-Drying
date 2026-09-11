@@ -1,0 +1,155 @@
+schema: '2.0'
+stages:
+  extract_features@resnet50:
+    cmd: "python extract_features.py --backbone resnet50 --images_dir \"data/potato_MC_image_dataset\"\
+      \ --labels_csv \"data/Potato_Moisture_content_labels.csv\" --filename_col image_name
+      --label_col MC --target_size 224 --out features/resnet50.npy --labels_out features/resnet50_labels.npy\n"
+    deps:
+    - path: data/Potato_Moisture_content_labels.csv
+      hash: md5
+      md5: be26e696a2c1ad1dea54305d0b133281
+      size: 5385
+    - path: data/potato_MC_image_dataset
+      hash: md5
+      md5: b57e6894e7eb371e9bab0a502b441012.dir
+      size: 1086915296
+      nfiles: 366
+    - path: extract_features.py
+      hash: md5
+      md5: 2158406f3080c9b551bbb47c4ebe41af
+      size: 4431
+    - path: preprocessing.py
+      hash: md5
+      md5: a0ee822df4d2861d84e1d79cad34f0f1
+      size: 3531
+    params:
+      params.yaml:
+        data.target_size: 224
+    outs:
+    - path: features/resnet50.npy
+      hash: md5
+      md5: 4b5fcfc481f693a3e6ed26a89e458ef0
+      size: 2998400
+    - path: features/resnet50_labels.npy
+      hash: md5
+      md5: 877c958b5184a91601374347b2c50ec6
+      size: 1592
+  extract_features@convnext_tiny:
+    cmd: "python extract_features.py --backbone convnext_tiny --images_dir \"data/potato_MC_image_dataset\"\
+      \ --labels_csv \"data/Potato_Moisture_content_labels.csv\" --filename_col image_name
+      --label_col MC --target_size 224 --out features/convnext_tiny.npy --labels_out
+      features/convnext_tiny_labels.npy\n"
+    deps:
+    - path: data/Potato_Moisture_content_labels.csv
+      hash: md5
+      md5: be26e696a2c1ad1dea54305d0b133281
+      size: 5385
+    - path: data/potato_MC_image_dataset
+      hash: md5
+      md5: b57e6894e7eb371e9bab0a502b441012.dir
+      size: 1086915296
+      nfiles: 366
+    - path: extract_features.py
+      hash: md5
+      md5: 2158406f3080c9b551bbb47c4ebe41af
+      size: 4431
+    - path: preprocessing.py
+      hash: md5
+      md5: a0ee822df4d2861d84e1d79cad34f0f1
+      size: 3531
+    params:
+      params.yaml:
+        data.target_size: 224
+    outs:
+    - path: features/convnext_tiny.npy
+      hash: md5
+      md5: bc399b37aae4ceae4a5e3c9a914bcba5
+      size: 1124480
+    - path: features/convnext_tiny_labels.npy
+      hash: md5
+      md5: 877c958b5184a91601374347b2c50ec6
+      size: 1592
+  extract_features@efficientnet_b0:
+    cmd: "python extract_features.py --backbone efficientnet_b0 --images_dir \"data/potato_MC_image_dataset\"\
+      \ --labels_csv \"data/Potato_Moisture_content_labels.csv\" --filename_col image_name
+      --label_col MC --target_size 224 --out features/efficientnet_b0.npy --labels_out
+      features/efficientnet_b0_labels.npy\n"
+    deps:
+    - path: data/Potato_Moisture_content_labels.csv
+      hash: md5
+      md5: be26e696a2c1ad1dea54305d0b133281
+      size: 5385
+    - path: data/potato_MC_image_dataset
+      hash: md5
+      md5: b57e6894e7eb371e9bab0a502b441012.dir
+      size: 1086915296
+      nfiles: 366
+    - path: extract_features.py
+      hash: md5
+      md5: 2158406f3080c9b551bbb47c4ebe41af
+      size: 4431
+    - path: preprocessing.py
+      hash: md5
+      md5: a0ee822df4d2861d84e1d79cad34f0f1
+      size: 3531
+    params:
+      params.yaml:
+        data.target_size: 224
+    outs:
+    - path: features/efficientnet_b0.npy
+      hash: md5
+      md5: d7ce84d781be09a2241708dd513b5f6b
+      size: 1874048
+    - path: features/efficientnet_b0_labels.npy
+      hash: md5
+      md5: 877c958b5184a91601374347b2c50ec6
+      size: 1592
+  train_evaluate:
+    cmd: "python train_evaluate.py --features_dir features --backbones resnet50 convnext_tiny
+      efficientnet_b0 --models linear_svr ridge rf knn xgboost --test_size 0.2 --random_state
+      42 --out results/metrics.json --out_csv results/metrics.csv\n"
+    deps:
+    - path: features/convnext_tiny.npy
+      hash: md5
+      md5: bc399b37aae4ceae4a5e3c9a914bcba5
+      size: 1124480
+    - path: features/efficientnet_b0.npy
+      hash: md5
+      md5: d7ce84d781be09a2241708dd513b5f6b
+      size: 1874048
+    - path: features/resnet50.npy
+      hash: md5
+      md5: 4b5fcfc481f693a3e6ed26a89e458ef0
+      size: 2998400
+    - path: train_evaluate.py
+      hash: md5
+      md5: 95ef7b1672add351e72fae64c670172a
+      size: 7257
+    params:
+      params.yaml:
+        feature_extraction.backbones:
+        - resnet50
+        - convnext_tiny
+        - efficientnet_b0
+        training:
+          models:
+          - linear_svr
+          - ridge
+          - rf
+          - knn
+          - xgboost
+          test_size: 0.2
+          random_state: 42
+    outs:
+    - path: results/metrics.csv
+      hash: md5
+      md5: 7166c2bebdf22250df7b2a9cc03a3a59
+      size: 1284
+    - path: results/metrics.json
+      hash: md5
+      md5: a509dfa522d5a41ce30a289a601ff096
+      size: 5137
+    - path: results/metrics_best.json
+      hash: md5
+      md5: c7db8cbb10e78461c4f624114530b332
+      size: 185

@@ -1,0 +1,130 @@
+stages:
+  extract_features:
+    foreach: ${feature_extraction.backbones}
+    do:
+      cmd: >
+        python extract_features.py
+        --backbone ${item}
+        --images_dir "${data.images_dir}"
+        --labels_csv "${data.labels_csv}"
+        --filename_col image_name
+        --label_col MC
+        --target_size ${data.target_size}
+        --out features/${item}.npy
+        --labels_out features/${item}_labels.npy
+      deps:
+        - extract_features.py
+        - preprocessing.py
+        - ${data.images_dir}
+        - ${data.labels_csv}
+      params:
+        - data.target_size
+      outs:
+        - features/${item}.npy
+        - features/${item}_labels.npy
+
+  train_evaluate:
+    # Note: keep this list in sync with feature_extraction.backbones / training.models
+    # in params.yaml. The `params:` block below still forces a re-run whenever
+    # you edit those values, even though this cmd string is static.
+    cmd: >
+      python train_evaluate.py
+      --features_dir features
+      --backbones resnet50 convnext_tiny efficientnet_b0
+      --models linear_svr ridge rf knn xgboost
+      --test_size ${training.test_size}
+      --random_state ${training.random_state}
+      --out results/metrics.json
+      --out_csv results/metrics.csv
+    deps:
+      - train_evaluate.py
+      - features/resnet50.npy
+      - features/convnext_tiny.npy
+      - features/efficientnet_b0.npy
+    params:
+      - feature_extraction.backbones
+      - training
+    metrics:
+      - results/metrics.json:
+          cache: false
+      - results/metrics_best.json:
+          cache: false
+    outs:
+      - results/metrics.csv
+
+  plot_results:
+    cmd: >
+      python plot_results.py
+      --metrics_csv results/metrics.csv
+      --out_dir results/plots
+    deps:
+      - plot_results.py
+      - results/metrics.csv
+    outs:
+      - results/plots
+
+  # ---- set2: ridge + convnext_tiny, vary alpha and val_size ----
+  tune_ridge_convnext:
+    foreach: ${tuning.ridge_grid}
+    do:
+      cmd: >
+        python train_evaluate.py
+        --features_dir features
+        --backbones convnext_tiny
+        --models ridge
+        --ridge_alpha ${item.alpha}
+        --val_size ${item.val_size}
+        --test_size ${training.test_size}
+        --random_state ${training.random_state}
+        --out results/set2/ridge_alpha${item.alpha}_val${item.val_size}.json
+        --out_csv results/set2/ridge_alpha${item.alpha}_val${item.val_size}.csv
+      deps:
+        - train_evaluate.py
+        - features/convnext_tiny.npy
+      outs:
+        - results/set2/ridge_alpha${item.alpha}_val${item.val_size}.csv
+      metrics:
+        - results/set2/ridge_alpha${item.alpha}_val${item.val_size}.json:
+            cache: false
+
+  aggregate_set2:
+    cmd: python aggregate_results.py --results_dir results/set2 --out results/set2_combined.csv
+    deps:
+      - aggregate_results.py
+      - results/set2
+    outs:
+      - results/set2_combined.csv
+
+  # ---- set3: linear_svr across all backbones, vary C and epsilon ----
+  tune_svr_linear:
+    foreach: ${tuning.svr_grid}
+    do:
+      cmd: >
+        python train_evaluate.py
+        --features_dir features
+        --backbones resnet50 convnext_tiny efficientnet_b0
+        --models linear_svr
+        --svr_c ${item.c}
+        --svr_epsilon ${item.epsilon}
+        --test_size ${training.test_size}
+        --random_state ${training.random_state}
+        --out results/set3/svr_c${item.c}_eps${item.epsilon}.json
+        --out_csv results/set3/svr_c${item.c}_eps${item.epsilon}.csv
+      deps:
+        - train_evaluate.py
+        - features/resnet50.npy
+        - features/convnext_tiny.npy
+        - features/efficientnet_b0.npy
+      outs:
+        - results/set3/svr_c${item.c}_eps${item.epsilon}.csv
+      metrics:
+        - results/set3/svr_c${item.c}_eps${item.epsilon}.json:
+            cache: false
+
+  aggregate_set3:
+    cmd: python aggregate_results.py --results_dir results/set3 --out results/set3_combined.csv
+    deps:
+      - aggregate_results.py
+      - results/set3
+    outs:
+      - results/set3_combined.csv
